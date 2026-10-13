@@ -16,6 +16,9 @@ protocol.registerSchemesAsPrivileged([
 let mainWindow
 let tray = null
 let isQuitting = false
+// 隐藏模式：X/Cmd+W 关闭窗口后进入（窗口隐藏 + Dock 图标移除）。
+// 此状态下协议唤起/系统激活都不弹窗，保持无感；只能通过托盘恢复
+let isHiddenMode = false
 
 // macOS: 显示主窗口并恢复 Dock 图标
 function showMainWindow() {
@@ -29,6 +32,7 @@ function showMainWindow() {
         app.dock.show();
         app.setActivationPolicy("regular");
     }
+    isHiddenMode = false;
 }
 
 // macOS: 关闭窗口时仅隐藏窗口并移除 Dock 图标，app 保持后台运行（持续响应 jms:// 协议）
@@ -39,6 +43,7 @@ function hideMainWindow() {
     if (process.platform === "darwin") {
         app.dock.hide();
     }
+    isHiddenMode = true;
 }
 
 // 托盘图标（36x36 @2x = 18pt，JumpServer 官方 Logo 单色剪影；setTemplateImage 让 macOS 自动适配深浅色菜单栏）
@@ -122,7 +127,20 @@ app.on("window-all-closed", () => {
 });
 
 app.on("activate", () => {
-    // macOS: 点击 Dock 图标 / Cmd+Tab 切回时，恢复窗口并重新显示 Dock 图标
+    // 隐藏模式下（协议唤起 / Cmd+Tab 等系统激活）：不弹窗，
+    // 仅把可能被系统恢复的 Dock 图标再次隐藏，保持无感
+    if (isHiddenMode) {
+        if (process.platform === "darwin") {
+            app.dock.hide();
+        }
+        return;
+    }
+    // 终端尚未配置时：任何激活都弹出窗口，引导用户完成配置
+    if (!isTerminalConfigured()) {
+        showMainWindow();
+        return;
+    }
+    // 已配置：Dock 图标点击 → 恢复窗口并重新显示 Dock 图标
     showMainWindow();
 });
 
@@ -224,11 +242,18 @@ const handleOpenFromUrl = (url) => {
 }
 
 app.on('open-url', (event, urlStr) => {
-    // 协议唤起时恢复窗口与 Dock 图标（如窗口此前被关闭并隐藏）
-    if (app.isReady()) {
-        showMainWindow();
-    }
+    // 连接实际由 Go sidecar（JumpServerClient 二进制）拉起本地终端完成，
+    // Electron 窗口只是配置界面——协议唤起默认完全无感，不弹窗、不恢复 Dock
     handleOpenFromUrl(urlStr);
+    if (app.isReady()) {
+        if (!isTerminalConfigured()) {
+            // 首次/未配置：弹出窗口引导用户做配置
+            showMainWindow();
+        } else if (isHiddenMode && process.platform === "darwin") {
+            // 系统处理协议唤起时会激活 app，可能恢复 Dock 图标——这里再次隐藏，保持无感
+            app.dock.hide();
+        }
+    }
 });
 
 let configFilePath
@@ -240,6 +265,31 @@ if (isDevelopment && !process.env.IS_TEST) {
     subPath = process.resourcesPath + "/bin"
 }
 configFilePath = path.join(subPath, 'config.json')
+
+// 判断终端是否已配置（config.json 中是否存在 is_set 的终端项）。
+// 未配置时协议唤起会弹出窗口引导用户做配置；已配置则保持无感
+function isTerminalConfigured() {
+    try {
+        const data = fse.readFileSync(configFilePath, "utf8");
+        const config = JSON.parse(data);
+        let platform
+        if (process.platform === "win32") {
+            platform = "windows"
+        } else if (process.platform === "darwin") {
+            platform = "macos"
+        } else {
+            platform = "linux"
+        }
+        const terminals = config[platform] && config[platform].terminal;
+        if (!Array.isArray(terminals)) {
+            return false;
+        }
+        return terminals.some(item => item.is_set === true);
+    } catch (e) {
+        // 配置文件缺失或解析失败 → 视为未配置
+        return false;
+    }
+}
 
 
 const callBackUrlName = 'config-reply-get'//消息发布-发布名称
