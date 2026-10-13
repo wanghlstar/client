@@ -17,10 +17,10 @@
   "main": "background.js",
   "dependencies": {
     "@babel/plugin-proposal-optional-chaining": "^7.21.0",
-    "@element-plus/icons-vue": "^2.1.0",
+    "@element-plus/icons-vue": "2.1.0",
     "core-js": "^3.8.3",
-    "element-plus": "^2.3.0",
-    "fs-extra": "^11.1.1",
+    "element-plus": "2.3.0",
+    "fs-extra": "11.1.1",
     "vue": "^3.2.13",
     "vue-i18n": "^9.6.5",
     "vue-router": "^4.1.6"
