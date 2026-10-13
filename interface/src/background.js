@@ -27,24 +27,9 @@ let startHidden = false
 let lastUrlStr = ""
 let lastUrlAt = 0
 let autoHideTimer = null
-// 进程启动时刻：用于区分"冷启动被协议唤起"与"运行中收到唤起"
-const appStartTime = Date.now()
 
-// 协议唤起后的静默处理：
-// - 冷启动头几秒收到 URL：本次进程就是被它唤起的，直接收起窗口 + Dock，彻底无感
-//   （此时窗口往往被系统激活处于前台，等 2s 判断聚焦会漏掉，所以必须直接收）
-// - 运行中收到 URL：客户端已在跑，唤起本就不弹窗；万一窗口露出来且不在前台，2s 后自动隐藏
-function silenceAfterUrlInvoke() {
-    if (process.platform !== "darwin") return
-    if (Date.now() - appStartTime < 3000) {
-        hideMainWindow()
-    } else {
-        scheduleAutoHide()
-    }
-}
-
-// 兜底：因协议唤起而露出的窗口，若 2s 后仍未被用户聚焦（不在前台/未激活），
-// 自动隐藏窗口 + Dock 图标，做到"无感"。用户主动打开（托盘/Dock 点击）的窗口不受影响
+// 兜底：手动打开窗口后切出前台时，若 2s 后仍未被用户聚焦（不在前台/未激活），
+// 自动隐藏窗口 + Dock 图标。协议唤起路径直接走 hideMainWindow()，不依赖此定时器
 function scheduleAutoHide() {
     if (process.platform !== "darwin") return
     if (autoHideTimer) clearTimeout(autoHideTimer)
@@ -206,14 +191,10 @@ app.on("activate", () => {
         showMainWindow();
         return;
     }
-    // 协议唤起引起的激活（含冷启动时不早于 URL 的那次 activate）：不主动弹窗；
-    // 窗口若被系统带出来，2s 后仍未被聚焦就自动隐藏。
-    // 3s 时间窗之外再 activate 视为用户主动打开（点 Dock 图标），正常显示
+    // 协议唤起引起的激活（含冷启动时不早于 URL 的那次 activate）：
+    // 立即收起窗口 + Dock，保持无感。3s 时间窗外再 activate 才视为用户主动点 Dock 图标打开
     if (launchedByUrl && Date.now() - lastUrlAt < 3000 && isConfiguredFor(lastUrlStr)) {
-        if (process.platform === "darwin") {
-            app.dock.hide();
-        }
-        silenceAfterUrlInvoke();
+        hideMainWindow();
         return;
     }
     // 已配置：Dock 图标点击 → 恢复窗口并重新显示 Dock 图标
@@ -352,8 +333,8 @@ app.on('open-url', (event, urlStr) => {
             // 已隐藏：系统处理协议唤起可能恢复 Dock 图标——再次隐藏，保持无感
             app.dock.hide();
         } else {
-            // 客户端已配置：唤起本身不需要界面，按冷启动/运行中分别处理
-            silenceAfterUrlInvoke()
+            // 已配置：协议唤起全程无感，立即收起窗口 + Dock，不闪、不等待
+            hideMainWindow()
         }
     }
 });
