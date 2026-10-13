@@ -22,17 +22,30 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: npm
+          cache-dependency-path: interface/package-lock.json
 
       - name: Install dependencies
-        run: npm install --legacy-peer-deps
+        run: npm ci --legacy-peer-deps
         working-directory: interface
 
       - name: Build mac app (arm64 dmg)
         run: npm run build:mac
         working-directory: interface
 
+      - name: Diagnose build output
+        if: always()
+        run: |
+          echo "=== dist_electron tree ==="
+          find interface/dist_electron -type f 2>/dev/null | head -50
+          echo "=== any dmg/blockmap (excl node_modules/.git) ==="
+          find . \( -name "*.dmg" -o -name "*.blockmap" \) -not -path "*/node_modules/*" -not -path "./.git/*" 2>/dev/null | head -20
+          echo "=== dist_electron size ==="
+          du -sh interface/dist_electron 2>/dev/null || echo "dist_electron NOT FOUND"
+
       - uses: actions/upload-artifact@v4
         with:
           name: JumpServer-Client-mac-arm64
-          path: interface/dist_electron/*.dmg
+          path: |
+            interface/dist_electron/**/*.dmg
           if-no-files-found: error
