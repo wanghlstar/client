@@ -41,15 +41,17 @@ function hideMainWindow() {
     }
 }
 
-// 托盘图标（16x16 模板样式，黑色透明底，macOS 自动适配深浅色菜单栏）
-const TRAY_ICON_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAANUlEQVR42mNgGErgPwUENqModguxXIrNI91QYh30f1C6jybhR2Pz8Ce9gXcfSeZRO78NUgAAq5g1y0YEO84AAAAASUVORK5CYII=";
+// 托盘图标（32x32 @2x，黑色透明底；setTemplateImage 让 macOS 自动适配深浅色菜单栏）
+const TRAY_ICON_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAYUlEQVR42u2WUQ4AMARD3f/SdgMxKSo08bl4aYaKnE62FFBtjcMgmlitzV0Q1oN0AC2sEED6ZNA7gHRirgMo2Nl/YC/A7j3guRU/ax7qAAyg/RpS5IH2RESRCSlS8elUpge/MxsC/yM/1QAAAABJRU5ErkJggg==";
 
 function createTray() {
     if (tray) {
         return tray
     }
     try {
-        tray = new Tray(nativeImage.createFromDataURL(TRAY_ICON_DATA_URL))
+        const trayImage = nativeImage.createFromDataURL(TRAY_ICON_DATA_URL)
+        trayImage.setTemplateImage(true)
+        tray = new Tray(trayImage)
         tray.setToolTip("JumpServer Client")
         tray.setContextMenu(Menu.buildFromTemplate([
             {label: "打开 JumpServer 客户端", click: showMainWindow},
