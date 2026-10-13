@@ -152,6 +152,12 @@ async function createWindow() {
         cancelAutoHide()
     });
 
+    // 窗口失去前台（切到别的应用）→ 2s 后自动隐藏窗口 + Dock。
+    // 规则：只要窗口不是激活状态，2s 就收起来；2s 内切回来则 focus 取消定时器
+    mainWindow.on("blur", () => {
+        scheduleAutoHide()
+    });
+
     // macOS: X 按钮 / Cmd+W 关闭窗口时，仅隐藏窗口并移除 Dock 图标（app 保持后台运行）
     mainWindow.on("close", (event) => {
         if (process.platform === "darwin" && !isQuitting) {
