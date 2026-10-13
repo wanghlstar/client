@@ -41,8 +41,10 @@ function hideMainWindow() {
     }
 }
 
-// 托盘图标（32x32 @2x，黑色透明底；setTemplateImage 让 macOS 自动适配深浅色菜单栏）
-const TRAY_ICON_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAYUlEQVR42u2WUQ4AMARD3f/SdgMxKSo08bl4aYaKnE62FFBtjcMgmlitzV0Q1oN0AC2sEED6ZNA7gHRirgMo2Nl/YC/A7j3guRU/ax7qAAyg/RpS5IH2RESRCSlS8elUpge/MxsC/yM/1QAAAABJRU5ErkJggg==";
+// 托盘图标（36x36 @2x = 18pt，JumpServer 官方 Logo 单色剪影；setTemplateImage 让 macOS 自动适配深浅色菜单栏）
+// 注：官方原版内嵌的 16x16 base64 PNG 实为损坏数据（解码后仅十余个随机像素，图标不可见），
+// 此处改用官方品牌 Logo（build/icons/256x256.png 的 alpha 通道）重新制作的模板图像
+const TRAY_ICON_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACQAAAAkCAYAAADhAJiYAAAAqElEQVR42u2YwQqAMAxD9/8/He87CG1eZmEOelOTliZkrvWfS48mEdlrDJHPiKlQY4hEiQksTClVsGMTq4LYxFyQBb5zBAQjpWAjtqrIRlC5I3uSIhXzIQXNsYqJ+Ep3ua0oQU2lRYhUVnmKApQVyU6kUiKq63wMIdKJEdTzZdnTPmQtNe1DuOypqdjxQ8EGXmOA0zmRGObKfmQESd7Nxtxe7/vZEM3QD8FiKPRy1Z0tAAAAAElFTkSuQmCC";
 
 function createTray() {
     if (tray) {
