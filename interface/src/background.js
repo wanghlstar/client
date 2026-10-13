@@ -1,4 +1,4 @@
-import {app, shell, BrowserWindow, ipcMain, protocol} from "electron";
+import {app, shell, BrowserWindow, ipcMain, protocol, Tray, Menu, nativeImage} from "electron";
 import {createProtocol} from "vue-cli-plugin-electron-builder/lib";
 import installExtension, {VUEJS3_DEVTOOLS} from "electron-devtools-installer";
 import path from 'path'
@@ -14,6 +14,52 @@ protocol.registerSchemesAsPrivileged([
 ]);
 
 let mainWindow
+let tray = null
+let isQuitting = false
+
+// macOS: 显示主窗口并恢复 Dock 图标
+function showMainWindow() {
+    if (!mainWindow || mainWindow.isDestroyed()) {
+        createWindow();
+    } else {
+        mainWindow.show();
+        mainWindow.focus();
+    }
+    if (process.platform === "darwin") {
+        app.dock.show();
+        app.setActivationPolicy("regular");
+    }
+}
+
+// macOS: 关闭窗口时仅隐藏窗口并移除 Dock 图标，app 保持后台运行（持续响应 jms:// 协议）
+function hideMainWindow() {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.hide();
+    }
+    if (process.platform === "darwin") {
+        app.dock.hide();
+    }
+}
+
+// 托盘图标（16x16 模板样式，黑色透明底，macOS 自动适配深浅色菜单栏）
+const TRAY_ICON_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAANUlEQVR42mNgGErgPwUENqModguxXIrNI91QYh30f1C6jybhR2Pz8Ce9gXcfSeZRO78NUgAAq5g1y0YEO84AAAAASUVORK5CYII=";
+
+function createTray() {
+    if (tray) {
+        return tray
+    }
+    try {
+        tray = new Tray(nativeImage.createFromDataURL(TRAY_ICON_DATA_URL))
+        tray.setToolTip("JumpServer Client")
+        tray.setContextMenu(Menu.buildFromTemplate([
+            {label: "打开 JumpServer 客户端", click: showMainWindow},
+            {type: "separator"},
+            {label: "退出", click: () => { isQuitting = true; app.quit(); }},
+        ]))
+    } catch (e) {
+        console.error("创建托盘图标失败:", e.toString())
+    }
+}
 
 async function createWindow() {
     // Create the browser window.
@@ -35,6 +81,14 @@ async function createWindow() {
             nodeIntegration: true,
             contextIsolation: false,
         },
+    });
+
+    // macOS: X 按钮 / Cmd+W 关闭窗口时，仅隐藏窗口并移除 Dock 图标（app 保持后台运行）
+    mainWindow.on("close", (event) => {
+        if (process.platform === "darwin" && !isQuitting) {
+            event.preventDefault();
+            hideMainWindow();
+        }
     });
 
     mainWindow.webContents.setWindowOpenHandler((details) => {
@@ -64,9 +118,13 @@ app.on("window-all-closed", () => {
 });
 
 app.on("activate", () => {
-    // On macOS it's common to re-create a window in the app when the
-    // dock icon is clicked and there are no other windows open.
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+    // macOS: 点击 Dock 图标 / Cmd+Tab 切回时，恢复窗口并重新显示 Dock 图标
+    showMainWindow();
+});
+
+app.on("before-quit", () => {
+    // Cmd+Q / 托盘退出：放行窗口关闭，app 正常退出
+    isQuitting = true;
 });
 
 // This method will be called when Electron has finished
@@ -83,6 +141,9 @@ app.on("ready", async () => {
     }
     registerLocalResourceProtocol();
     createWindow();
+    if (process.platform === "darwin") {
+        createTray();
+    }
 });
 
 function registerLocalResourceProtocol() {
@@ -159,15 +220,12 @@ const handleOpenFromUrl = (url) => {
 }
 
 app.on('open-url', (event, urlStr) => {
+    // 协议唤起时恢复窗口与 Dock 图标（如窗口此前被关闭并隐藏）
+    if (app.isReady()) {
+        showMainWindow();
+    }
     handleOpenFromUrl(urlStr);
 });
-
-// 隐藏主窗口
-const hideWindow = () => {
-    if (mainWindow && !mainWindow.isDestroyed()) {
-        mainWindow.hide()
-    }
-}
 
 let configFilePath
 

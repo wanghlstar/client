@@ -1,0 +1,38 @@
+name: Build Mac arm64
+
+on:
+  workflow_dispatch:   # 在 Actions 页面手动触发
+  push:
+    branches: [custom-v2.1.3-nodock] # push 到本分支自动触发
+
+jobs:
+  build-mac:
+    runs-on: macos-latest   # 当前为 arm64 runner；如需固定可改为 macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: Build go client (darwin sidecar)
+        run: make build-client
+        working-directory: go-client
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install --legacy-peer-deps
+        working-directory: interface
+
+      - name: Build mac app (arm64 dmg)
+        run: npm run build:mac
+        working-directory: interface
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: JumpServer-Client-mac-arm64
+          path: interface/dist_electron/*.dmg
+          if-no-files-found: error
