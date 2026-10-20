@@ -18,10 +18,29 @@ func getCommandFromArgs(connectInfo map[string]string, argFormat string) string 
 	return argFormat
 }
 
+func hasActiveRDP() bool {
+	out, err := exec.Command("/usr/bin/pgrep", "-f", "/Microsoft Remote Desktop.app/Contents/MacOS/Microsoft Remote Desktop").Output()
+	if err != nil {
+		return false
+	}
+	for _, pid := range strings.Fields(string(out)) {
+		conn, err := exec.Command("/usr/sbin/lsof", "-nP", "-p", pid, "-iTCP", "-sTCP:ESTABLISHED").Output()
+		if err != nil {
+			continue
+		}
+		if strings.Contains(string(conn), "ESTABLISHED") {
+			return true
+		}
+	}
+	return false
+}
+
 func awakenRDPCommand(filePath string, cfg *config.AppConfig) *exec.Cmd {
 	global.LOG.Debug(filePath)
-	cmd := exec.Command("open", "-n", "-b", "com.microsoft.rdc.macos", filePath)
-	return cmd
+	if hasActiveRDP() {
+		return exec.Command("open", "-n", "-b", "com.microsoft.rdc.macos", filePath)
+	}
+	return exec.Command("open", "-b", "com.microsoft.rdc.macos", filePath)
 }
 
 func awakenSSHCommand(r *Rouse, cfg *config.AppConfig) *exec.Cmd {

@@ -80,22 +80,39 @@ func (r *Rouse) getName() string {
 	return strings.Replace(name, " ", "", -1)
 }
 
-func removeCurRdpFile() {
-	re := regexp.MustCompile(".*\\.rdp$")
-	dir := filepath.Dir(os.Args[0])
-	rd, _ := ioutil.ReadDir(dir)
-	for _, v := range rd {
+func rdpTempDir() string {
+	return filepath.Join(os.TempDir(), "jumpserver-client-rdp")
+}
+
+func removeRdpFiles(dir string) {
+	re := regexp.MustCompile("(?i).*\\.rdp$")
+	files, _ := ioutil.ReadDir(dir)
+	for _, v := range files {
 		if !v.IsDir() && re.MatchString(v.Name()) {
-			os.Remove(filepath.Join(dir, v.Name()))
+			_ = os.Remove(filepath.Join(dir, v.Name()))
 		}
 	}
+}
+
+func removeCurRdpFile() {
+	removeRdpFiles(rdpTempDir())
+	removeRdpFiles(filepath.Dir(os.Args[0]))
 }
 
 func (r *Rouse) HandleRDP(appConfig *config.AppConfig) {
 	removeCurRdpFile()
 	fileName, _ := url.QueryUnescape(r.File.Name)
-	filePath := filepath.Join(filepath.Dir(os.Args[0]), fileName+".rdp")
-	err := ioutil.WriteFile(filePath, []byte(r.Content), os.ModePerm)
+	safeName := filepath.Base(fileName)
+	if safeName == "." || safeName == "" {
+		safeName = "jumpserver"
+	}
+	tempDir := rdpTempDir()
+	if err := os.MkdirAll(tempDir, 0700); err != nil {
+		global.LOG.Error(err.Error())
+		return
+	}
+	filePath := filepath.Join(tempDir, safeName+".rdp")
+	err := ioutil.WriteFile(filePath, []byte(r.Content), 0600)
 	if err != nil {
 		global.LOG.Error(err.Error())
 		return
