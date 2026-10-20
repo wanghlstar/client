@@ -19,7 +19,7 @@ func getCommandFromArgs(connectInfo map[string]string, argFormat string) string 
 }
 
 func hasActiveRDP(appPath string) bool {
-	out, err := exec.Command("/usr/bin/pgrep", "-f", appPath+"/Contents/MacOS/").Output()
+	out, err := exec.Command("/usr/bin/pgrep", "-f", appPath+"/Contents/").Output()
 	if err != nil {
 		return false
 	}
@@ -41,14 +41,18 @@ func selectedRDPApp(cfg *config.AppConfig) *config.AppItem {
 	}
 	for i := range cfg.MacOS.RemoteDesktop {
 		app := &cfg.MacOS.RemoteDesktop[i]
-		if app.IsActive() {
-			return app
+		if app.IsActive() && app.Path != "" {
+			if _, err := os.Stat(app.Path); err == nil {
+				return app
+			}
 		}
 	}
 	for i := range cfg.MacOS.RemoteDesktop {
 		app := &cfg.MacOS.RemoteDesktop[i]
-		if app.IsSet {
-			return app
+		if app.IsSet && app.Path != "" {
+			if _, err := os.Stat(app.Path); err == nil {
+				return app
+			}
 		}
 	}
 	return nil

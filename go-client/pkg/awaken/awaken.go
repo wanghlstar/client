@@ -99,6 +99,21 @@ func removeCurRdpFile() {
 	removeRdpFiles(filepath.Dir(os.Args[0]))
 }
 
+func normalizeRDPContent(content string) string {
+	var lines []string
+	for _, line := range strings.Split(content, "\n") {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "redirectsmartcards:") || strings.HasPrefix(trimmed, "redirectclipboard:") {
+			continue
+		}
+		if trimmed != "" {
+			lines = append(lines, line)
+		}
+	}
+	lines = append(lines, "redirectsmartcards:i:0", "redirectclipboard:i:1")
+	return strings.Join(lines, "\n")
+}
+
 func (r *Rouse) HandleRDP(appConfig *config.AppConfig) {
 	removeCurRdpFile()
 	fileName, _ := url.QueryUnescape(r.File.Name)
@@ -112,7 +127,7 @@ func (r *Rouse) HandleRDP(appConfig *config.AppConfig) {
 		return
 	}
 	filePath := filepath.Join(tempDir, safeName+".rdp")
-	err := ioutil.WriteFile(filePath, []byte(r.Content), 0600)
+	err := ioutil.WriteFile(filePath, []byte(normalizeRDPContent(r.Content)), 0600)
 	if err != nil {
 		global.LOG.Error(err.Error())
 		return
