@@ -347,6 +347,25 @@
         "is_internal": true,
         "is_default": true,
         "is_set": true
+      },
+      {
+        "name": "windowsapp",
+        "display_name": "Windows App",
+        "protocol": [
+          "rdp"
+        ],
+        "comment": {
+          "zh": "Microsoft Windows App 是 Microsoft Remote Desktop 的新版客户端，用于连接远程 PC 和工作资源。\n\n!!!需要先安装官方 Windows App，点击保存并设为默认后使用!!!",
+          "en": "Microsoft Windows App is the new Microsoft Remote Desktop client for connecting to remote PCs and work resources.\n\n!!!Install the official Windows App first, then click Save & Default to use it!!!"
+        },
+        "download_url": "",
+        "type": "windows",
+        "path": "/Applications/Windows App.app",
+        "arg_format": "{file}",
+        "match_first": [],
+        "is_internal": true,
+        "is_default": false,
+        "is_set": true
       }
     ],
     "filetransfer": [
