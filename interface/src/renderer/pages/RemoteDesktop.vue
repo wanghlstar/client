@@ -39,6 +39,9 @@
           @change="changeFile"
         />
       </el-form-item>
+      <el-form-item :label="$t('Common.RdpParams')" prop="rdp_params">
+        <el-input v-model="selectItem.rdp_params" type="textarea" :rows="3" placeholder="redirectclipboard:i:1"/>
+      </el-form-item>
     </el-form>
   </SettingDialog>
 </template>
@@ -71,6 +74,7 @@ export default {
         comment: '',
         download_url: '',
         path: '',
+        rdp_params: '',
         is_internal: false,
         is_default: false,
       },
@@ -125,6 +129,7 @@ export default {
         comment: '',
         download_url: '',
         path: '',
+        rdp_params: '',
         is_internal: false,
         is_default: false,
       }

@@ -29,6 +29,7 @@ type AppItem struct {
 	MatchFirst  []string `json:"match_first"`
 	Path        string   `json:"path"`
 	ArgFormat   string   `json:"arg_format"`
+	RDPParams   string   `json:"rdp_params"`
 	IsInternal  bool     `json:"is_internal"`
 	IsDefault   bool     `json:"is_default"`
 	IsSet       bool     `json:"is_set"`

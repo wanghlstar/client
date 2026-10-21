@@ -13,7 +13,8 @@
     "Configured": "Configured",
     "NotConfigured": "Not Configured",
     "OracleOCI": "The client needs to use OCI version 21.0 and above to connect to the Oracle.",
-    "SystemComesWith": "System comes with"
+    "SystemComesWith": "System comes with",
+    "RdpParams": "Custom RDP Parameters"
   },
   "Dialog": {
     "Save&Default": "Save And Default",

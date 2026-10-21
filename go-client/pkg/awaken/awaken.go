@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strings"
 )
 
@@ -99,7 +100,35 @@ func removeCurRdpFile() {
 	removeRdpFiles(filepath.Dir(os.Args[0]))
 }
 
-func normalizeRDPContent(content string) string {
+func rdpExtraParams(cfg *config.AppConfig) string {
+	if cfg == nil {
+		return ""
+	}
+	apps := cfg.MacOS.RemoteDesktop
+	switch runtime.GOOS {
+	case "windows":
+		apps = cfg.Windows.RemoteDesktop
+	case "linux":
+		apps = cfg.Linux.RemoteDesktop
+	}
+	for _, app := range apps {
+		if app.IsActive() && app.Path != "" {
+			if _, err := os.Stat(app.Path); err == nil {
+				return app.RDPParams
+			}
+		}
+	}
+	for _, app := range apps {
+		if app.IsSet && app.Path != "" {
+			if _, err := os.Stat(app.Path); err == nil {
+				return app.RDPParams
+			}
+		}
+	}
+	return ""
+}
+
+func normalizeRDPContent(content, extra string) string {
 	var lines []string
 	for _, line := range strings.Split(content, "\n") {
 		trimmed := strings.TrimSpace(line)
@@ -111,6 +140,12 @@ func normalizeRDPContent(content string) string {
 		}
 	}
 	lines = append(lines, "redirectsmartcards:i:0", "redirectclipboard:i:1")
+	for _, line := range strings.Split(extra, "\n") {
+		line = strings.TrimSpace(line)
+		if line != "" {
+			lines = append(lines, line)
+		}
+	}
 	return strings.Join(lines, "\n")
 }
 
@@ -127,7 +162,8 @@ func (r *Rouse) HandleRDP(appConfig *config.AppConfig) {
 		return
 	}
 	filePath := filepath.Join(tempDir, safeName+".rdp")
-	err := ioutil.WriteFile(filePath, []byte(normalizeRDPContent(r.Content)), 0600)
+	extraParams := rdpExtraParams(appConfig)
+	err := ioutil.WriteFile(filePath, []byte(normalizeRDPContent(r.Content, extraParams)), 0600)
 	if err != nil {
 		global.LOG.Error(err.Error())
 		return

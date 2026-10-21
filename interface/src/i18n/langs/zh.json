@@ -13,7 +13,8 @@
     "Configured": "已配置",
     "NotConfigured": "未配置",
     "OracleOCI": "本地客户端连 Oracle 数据库需要使用 21.0 及以上版本 OCI",
-    "SystemComesWith": "系统自带"
+    "SystemComesWith": "系统自带",
+    "RdpParams": "自定义 RDP 参数"
   },
   "Dialog": {
     "Save&Default": "保存且默认",

@@ -492,6 +492,7 @@ ipcMain.on('config-set', function (event, type, value) {
                     item.is_default = value.is_default
                     item.is_set = value.is_set
                     item.match_first = value.match_first
+                    item.rdp_params = value.rdp_params
                 }
             })
             const config_str = JSON.stringify(config)
