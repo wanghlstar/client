@@ -24,7 +24,7 @@ func hasActiveRDP(appPath string) bool {
 		return false
 	}
 	for _, pid := range strings.Fields(string(out)) {
-		conn, err := exec.Command("/usr/sbin/lsof", "-nP", "-p", pid, "-iTCP", "-sTCP:ESTABLISHED").Output()
+		conn, err := exec.Command("/usr/sbin/lsof", "-nP", "-a", "-p", pid, "-iTCP", "-sTCP:ESTABLISHED").Output()
 		if err != nil {
 			continue
 		}
