@@ -18,23 +18,6 @@ func getCommandFromArgs(connectInfo map[string]string, argFormat string) string 
 	return argFormat
 }
 
-func hasActiveRDP(appPath string) bool {
-	out, err := exec.Command("/usr/bin/pgrep", "-f", appPath+"/Contents/").Output()
-	if err != nil {
-		return false
-	}
-	for _, pid := range strings.Fields(string(out)) {
-		conn, err := exec.Command("/usr/sbin/lsof", "-nP", "-a", "-p", pid, "-iTCP", "-sTCP:ESTABLISHED").Output()
-		if err != nil {
-			continue
-		}
-		if strings.Contains(string(conn), "ESTABLISHED") {
-			return true
-		}
-	}
-	return false
-}
-
 func selectedRDPApp(cfg *config.AppConfig) *config.AppItem {
 	if cfg == nil {
 		return nil
@@ -62,15 +45,7 @@ func awakenRDPCommand(filePath string, cfg *config.AppConfig) *exec.Cmd {
 	global.LOG.Debug(filePath)
 	app := selectedRDPApp(cfg)
 	if app != nil && app.Path != "" {
-		args := []string{"-a", app.Path}
-		if hasActiveRDP(app.Path) {
-			args = append([]string{"-n"}, args...)
-		}
-		args = append(args, filePath)
-		return exec.Command("/usr/bin/open", args...)
-	}
-	if hasActiveRDP("/Applications/Microsoft Remote Desktop.app") {
-		return exec.Command("/usr/bin/open", "-n", "-b", "com.microsoft.rdc.macos", filePath)
+		return exec.Command("/usr/bin/open", "-a", app.Path, filePath)
 	}
 	return exec.Command("/usr/bin/open", "-b", "com.microsoft.rdc.macos", filePath)
 }
