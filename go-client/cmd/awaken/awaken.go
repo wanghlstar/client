@@ -13,6 +13,10 @@ import (
 
 func main() {
 	p := &awaken.Info{}
+	if len(os.Args) == 5 && os.Args[1] == "--watch-rdp" {
+		awaken.WatchRDPInstance(os.Args[2], os.Args[3], os.Args[4])
+		return
+	}
 	if len(os.Args) != 1 {
 		global.LOG = logger.InitLogger()
 		zap.ReplaceGlobals(global.LOG)
