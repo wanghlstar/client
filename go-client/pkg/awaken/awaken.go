@@ -82,6 +82,12 @@ func (r *Rouse) getName() string {
 }
 
 func rdpTempDir() string {
+	// macOS 会把「其他 App 的临时目录」算作 App Data：RDC 打开其中的 .rdp
+	// 会触发一次 TCC 授权，授权期间打开动作被丢弃，首次连接就没了。
+	// 统一放到共享的 /tmp，避开 App Data 保护。
+	if runtime.GOOS == "darwin" {
+		return "/tmp/jumpserver-client-rdp"
+	}
 	return filepath.Join(os.TempDir(), "jumpserver-client-rdp")
 }
 
